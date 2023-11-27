@@ -1,4 +1,3 @@
-from typing import Union
 from fastapi import FastAPI
 from pytube import YouTube
 from moviepy.editor import *
@@ -7,22 +6,24 @@ from transformers import AutoTokenizer , AutoModelForSeq2SeqLM , pipeline, AutoM
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
 from fastapi import FastAPI, UploadFile
-from starlette.responses import JSONResponse
 import soundfile as sf
 import librosa
 import numpy as np
 import io
 import tempfile
+import base64
 
-# secret_value = "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"
-# login(token=secret_value)
 
 app = FastAPI()
+
+import torch 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device  
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained("openai/whisper-small")
 tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-small", language="Swahili", task="transcribe")
 processor = WhisperProcessor.from_pretrained("Jayem-11/whisper-small-swahili-3")
-asr_model = AutoModel.from_pretrained('../SpeechToText/model')
+asr_model = WhisperForConditionalGeneration.from_pretrained('../SpeechToText/model')
 forced_decoder_ids = processor.get_decoder_prompt_ids(language="sw", task="transcribe")
 
 t5_tokenizer = AutoTokenizer.from_pretrained("google/mt5-small")
@@ -69,12 +70,27 @@ def extract_and_resample_audio(file):
 
 @app.post("/predict")
 async def predict(file: UploadFile):
-    audio_resampled = extract_and_resample_audio(await file.read())
+    # audio_resampled = extract_and_resample_audio(await file.read())
 
-    input_feats = feature_extractor(audio_resampled, sampling_rate = 16000).input_features[0]
+    # input_feats = feature_extractor(audio_resampled, sampling_rate = 16000).input_features[0]
+
+    arr_base64 = await file.read()
+
+    # Decode the base64 string to bytes
+    arr_bytes_decoded = base64.b64decode(arr_base64)
+
+    # Convert the bytes back to a numpy array
+    input_feats = np.frombuffer(arr_bytes_decoded, dtype=np.float32)
+
     input_feats = np.expand_dims(input_feats, axis=0)
 
-    output = asr_model.generate(input_feats)
+    input_feats = input_feats.reshape(1, 80, 3000)
+    input_feats = torch.from_numpy(input_feats)
+    print(input_feats.shape)
+
+
+    output = asr_model.generate(input_features=input_feats.to(device),max_new_tokens=255,).cpu().numpy()
+
 
     sample_text = tokenizer.batch_decode(output, skip_special_tokens=True)
 
@@ -83,7 +99,7 @@ async def predict(file: UploadFile):
 
     summary = summarizer(
         sample_text,
-        max_length=215,
+        max_length=215, 
     )
 
-    return {'summary': summary,}
+    return {'summary': summary}
