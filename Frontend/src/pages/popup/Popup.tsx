@@ -4,10 +4,13 @@ import axios from "axios";
 import { useEffect, useState, useRef } from "react";
 import * as np from "numjs";
 
+// {"data":{"summary":[{"summary_text":"Mfanyabiashara wa mafuta ya dizela nchini Marekani anjo Rogge ameshtakiwa katika makao makuu ya upelelezi."}]},"status":200,"statusText":"","headers":{"content-length":"139","content-type":"application/json","date":"Wed, 29 Nov 2023 11:44:28 GMT","link":"<https://huggingface.co/spaces/Jayem-11/swahili>; rel=\"canonical\"","server":"uvicorn","x-proxied-host":"http://10.19.106.158:7860","x-proxied-path":"/predict","x-request-id":"1f910007-74a6-4b80-8f65-704372d94d55"},"config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false},"adapter":["xhr","http"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*"},"method":"post","url":"https://jayem-11-swahili.hf.space/predict","data":{}},"request":{}}
+
 const Popup = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const url = "http://127.0.0.1:8000/predict";
+  // const url = "http://127.0.0.1:8000/predict";
+  const url = "https://jayem-11-swahili.hf.space/predict"
 
   const onFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -25,7 +28,8 @@ const Popup = () => {
         url: url,
         data: formData,
       });
-      console.log(response.data);
+      alert(JSON.stringify(response.data.summary[0].summary_text));
+      // localStorage.setItem("summary", JSON.stringify(response))
       console.log("gotcha");
     } catch (error) {
       console.error("Error:", error);
